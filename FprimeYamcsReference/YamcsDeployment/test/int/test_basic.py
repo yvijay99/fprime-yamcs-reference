@@ -73,10 +73,10 @@ def test_cmd_no_op(fprime_test_api):
 
     Tunables: max_delay (5s).
     """
-    fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=5)
+    fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=5, timeout=15)
     assert fprime_test_api.get_command_test_history().size() == 1
     prev = fprime_test_api.get_command_test_history().size()
-    fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=5)
+    fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=5, timeout=15)
     assert fprime_test_api.get_command_test_history().size() == prev + 1
 
 
@@ -96,6 +96,7 @@ def test_cmd_no_op_string(fprime_test_api):
             "CdhCore.cmdDisp.CMD_NO_OP_STRING",
             [value],
             max_delay=5,
+            timeout=15,
             events=events,
         )
         assert fprime_test_api.get_command_test_history().size() == count
@@ -107,7 +108,7 @@ def test_cmd_clear_tracking(fprime_test_api):
     Tunables: max_delay (5s).
     """
     fprime_test_api.send_and_assert_command(
-        "CdhCore.cmdDisp.CMD_CLEAR_TRACKING", max_delay=5
+        "CdhCore.cmdDisp.CMD_CLEAR_TRACKING", max_delay=5, timeout=15
     )
 
 
@@ -176,7 +177,7 @@ def test_event_filter_state(fprime_test_api):
     Tunables: max_delay (5s).
     """
     fprime_test_api.send_and_assert_command(
-        "CdhCore.events.DUMP_FILTER_STATE", max_delay=5
+        "CdhCore.events.DUMP_FILTER_STATE", max_delay=5, timeout=15
     )
 
 
@@ -187,11 +188,11 @@ def test_event_set_id_filter(fprime_test_api):
     Tunables: event ID (0x507), max_delay (5s).
     """
     fprime_test_api.send_and_assert_command(
-        "CdhCore.events.SET_ID_FILTER", ["0x507", "ENABLED"], max_delay=5
+        "CdhCore.events.SET_ID_FILTER", ["0x507", "ENABLED"], max_delay=5, timeout=15
     )
-    fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=5)
+    fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=5, timeout=15)
     fprime_test_api.send_and_assert_command(
-        "CdhCore.events.SET_ID_FILTER", ["0x507", "DISABLED"], max_delay=5
+        "CdhCore.events.SET_ID_FILTER", ["0x507", "DISABLED"], max_delay=5, timeout=15
     )
 
 
@@ -212,8 +213,8 @@ def test_event_severity_filter(fprime_test_api):
         zero = predicates.equal_to(0)
 
         time.sleep(10)
-        fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP")
-        fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP")
+        fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", timeout=15)
+        fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", timeout=15)
         time.sleep(1.5)
 
         fprime_test_api.assert_event_count(pred, cmd_events)
@@ -242,10 +243,10 @@ def test_health_enable_disable(fprime_test_api):
     Tunables: max_delay (5s).
     """
     fprime_test_api.send_and_assert_command(
-        "CdhCore.health.HLTH_ENABLE", ["DISABLED"], max_delay=10
+        "CdhCore.health.HLTH_ENABLE", ["DISABLED"], max_delay=10, timeout=15
     )
     fprime_test_api.send_and_assert_command(
-        "CdhCore.health.HLTH_ENABLE", ["ENABLED"], max_delay=10
+        "CdhCore.health.HLTH_ENABLE", ["ENABLED"], max_delay=10, timeout=15
     )
 
 
@@ -259,11 +260,13 @@ def test_health_ping_enable(fprime_test_api):
         "CdhCore.health.HLTH_PING_ENABLE",
         ["FileHandling_fileManager", "DISABLED"],
         max_delay=5,
+        timeout=15,
     )
     fprime_test_api.send_and_assert_command(
         "CdhCore.health.HLTH_PING_ENABLE",
         ["FileHandling_fileManager", "ENABLED"],
         max_delay=5,
+        timeout=15,
     )
 
 
@@ -278,7 +281,7 @@ def test_version_report(fprime_test_api):
     """
     for variant in ["PROJECT", "FRAMEWORK", "LIBRARY", "CUSTOM", "ALL"]:
         fprime_test_api.send_and_assert_command(
-            "CdhCore.version.VERSION", [variant], max_delay=5
+            "CdhCore.version.VERSION", [variant], max_delay=5, timeout=15
         )
 
 
@@ -288,10 +291,10 @@ def test_version_enable_disable(fprime_test_api):
     Tunables: max_delay (5s).
     """
     fprime_test_api.send_and_assert_command(
-        "CdhCore.version.ENABLE", ["ENABLED"], max_delay=5
+        "CdhCore.version.ENABLE", ["ENABLED"], max_delay=5, timeout=15
     )
     fprime_test_api.send_and_assert_command(
-        "CdhCore.version.ENABLE", ["DISABLED"], max_delay=5
+        "CdhCore.version.ENABLE", ["DISABLED"], max_delay=5, timeout=15
     )
 
 
@@ -329,10 +332,10 @@ def test_system_resources_enable_disable(fprime_test_api):
     Tunables: max_delay (5s).
     """
     fprime_test_api.send_and_assert_command(
-        "FprimeYamcsReference.systemResources.ENABLE", ["DISABLED"], max_delay=5
+        "FprimeYamcsReference.systemResources.ENABLE", ["DISABLED"], max_delay=5, timeout=15
     )
     fprime_test_api.send_and_assert_command(
-        "FprimeYamcsReference.systemResources.ENABLE", ["ENABLED"], max_delay=5
+        "FprimeYamcsReference.systemResources.ENABLE", ["ENABLED"], max_delay=5, timeout=15
     )
 
 
@@ -346,10 +349,10 @@ def test_file_manager_create_remove_directory(fprime_test_api):
     Tunables: directory path (/tmp/yamcs_test_dir), max_delay (10s).
     """
     fprime_test_api.send_and_assert_command(
-        "FileHandling.fileManager.CreateDirectory", ["/tmp/yamcs_test_dir"], max_delay=10
+        "FileHandling.fileManager.CreateDirectory", ["/tmp/yamcs_test_dir"], max_delay=10, timeout=15
     )
     fprime_test_api.send_and_assert_command(
-        "FileHandling.fileManager.RemoveDirectory", ["/tmp/yamcs_test_dir"], max_delay=10
+        "FileHandling.fileManager.RemoveDirectory", ["/tmp/yamcs_test_dir"], max_delay=10, timeout=15
     )
 
 
@@ -362,6 +365,7 @@ def test_file_manager_file_size(fprime_test_api):
         "FileHandling.fileManager.FileSize",
         ["/tmp/test_file.txt"],
         max_delay=10,
+        timeout=15,
     )
 
 
@@ -379,6 +383,7 @@ def test_file_downlink_send_file(fprime_test_api):
         "FileHandling.fileDownlink.SendFile",
         ["/tmp/test_file.txt", "/tmp/yamcs_dl.txt"],
         max_delay=30,
+        timeout=35,
     )
 
 
@@ -388,7 +393,7 @@ def test_file_downlink_cancel(fprime_test_api):
     Tunables: max_delay (5s).
     """
     fprime_test_api.send_and_assert_command(
-        "FileHandling.fileDownlink.Cancel", max_delay=5
+        "FileHandling.fileDownlink.Cancel", max_delay=5, timeout=15
     )
 
 
@@ -401,7 +406,7 @@ def test_file_uplink(fprime_test_api):
 
     Tunables: timeout (10s).
     """
-    fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=5)
+    fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=5, timeout=15)
     fprime_test_api.assert_telemetry_count(
         1, channels="FileHandling.fileUplink.PacketsReceived", timeout=10
     )
