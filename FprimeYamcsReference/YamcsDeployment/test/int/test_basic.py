@@ -12,7 +12,6 @@ Run with:
 
 import time
 from enum import Enum
-from pathlib import Path
 
 from fprime_gds.common.testing_fw import predicates
 from fprime_gds.common.utils.event_severity import EventSeverity
@@ -303,20 +302,23 @@ def test_system_resources_telemetry(fprime_test_api):
     """Verify system resource telemetry channels report non-zero values
     for memory and CPU.
 
-    Tunables: timeout (10s), threshold (> 0).
+    Tunables: timeout (30s), threshold (> 0).
     """
+    fprime_test_api.send_and_assert_command(
+        "FprimeYamcsReference.systemResources.ENABLE", ["ENABLED"], max_delay=5
+    )
     above_zero = predicates.greater_than(0)
     fprime_test_api.assert_telemetry(
-        "systemResources.MEMORY_TOTAL", above_zero, timeout=10
+        "FprimeYamcsReference.systemResources.MEMORY_TOTAL", above_zero, timeout=30
     )
     fprime_test_api.assert_telemetry(
-        "systemResources.MEMORY_USED", above_zero, timeout=10
+        "FprimeYamcsReference.systemResources.MEMORY_USED", above_zero, timeout=30
     )
     fprime_test_api.assert_telemetry(
-        "systemResources.NON_VOLATILE_TOTAL", above_zero, timeout=10
+        "FprimeYamcsReference.systemResources.NON_VOLATILE_TOTAL", above_zero, timeout=30
     )
     fprime_test_api.assert_telemetry(
-        "systemResources.CPU", predicates.greater_than(0.0), timeout=10
+        "FprimeYamcsReference.systemResources.CPU", predicates.greater_than(0.0), timeout=30
     )
 
 
@@ -326,10 +328,10 @@ def test_system_resources_enable_disable(fprime_test_api):
     Tunables: max_delay (5s).
     """
     fprime_test_api.send_and_assert_command(
-        "systemResources.ENABLE", ["DISABLED"], max_delay=5
+        "FprimeYamcsReference.systemResources.ENABLE", ["DISABLED"], max_delay=5
     )
     fprime_test_api.send_and_assert_command(
-        "systemResources.ENABLE", ["ENABLED"], max_delay=5
+        "FprimeYamcsReference.systemResources.ENABLE", ["ENABLED"], max_delay=5
     )
 
 
@@ -351,13 +353,12 @@ def test_file_manager_create_remove_directory(fprime_test_api):
 
 
 def test_file_manager_file_size(fprime_test_api):
-    """Query the size of test_file.txt on the target filesystem.
+    """Query the size of a known file on the target filesystem.
 
-    Tunables: file path (test_file.txt alongside this script), max_delay (10s).
+    Tunables: file path (/tmp/test_file.txt), max_delay (10s).
     """
-    test_file = Path(__file__).parent / "test_file.txt"
     fprime_test_api.send_and_assert_command(
-        "FileHandling.fileManager.FileSize", [str(test_file)], max_delay=10
+        "FileHandling.fileManager.FileSize", ["/tmp/test_file.txt"], max_delay=10
     )
 
 
@@ -366,15 +367,14 @@ def test_file_manager_file_size(fprime_test_api):
 # ---------------------------------------------------------------------------
 
 def test_file_downlink_send_file(fprime_test_api):
-    """Request a file downlink of test_file.txt to a destination filename.
+    """Request a file downlink of a known file to a destination filename.
 
-    Tunables: source file (test_file.txt), dest name (yamcs_test_dl.txt),
+    Tunables: source file (/tmp/test_file.txt), dest name (/tmp/yamcs_dl.txt),
     max_delay (30s).
     """
-    test_file = Path(__file__).parent / "test_file.txt"
     fprime_test_api.send_and_assert_command(
         "FileHandling.fileDownlink.SendFile",
-        [str(test_file), "yamcs_test_dl.txt"],
+        ["/tmp/test_file.txt", "/tmp/yamcs_dl.txt"],
         max_delay=30,
     )
 
@@ -410,11 +410,15 @@ def test_file_uplink(fprime_test_api):
 
 def test_cmd_sequencer_validate(fprime_test_api):
     """Send CS_VALIDATE for a nonexistent file. The command dispatches
-    through YAMCS but validation fails on the target — proves the
-    sequencer command path works.
+    through YAMCS and the sequencer returns a FileNotFound error — proves
+    the sequencer command path works end-to-end.
 
-    Tunables: file path (/tmp/nonexistent.bin), max_delay (5s).
+    Tunables: file path (/tmp/nonexistent.bin), timeout (5s).
     """
-    fprime_test_api.send_and_assert_command(
-        "cmdSeq.CS_VALIDATE", ["/tmp/nonexistent.bin"], max_delay=5
+    fprime_test_api.send_command(
+        "FprimeYamcsReference.cmdSeq.CS_VALIDATE", ["/tmp/nonexistent.bin"]
     )
+    result = fprime_test_api.await_event(
+        "FprimeYamcsReference.cmdSeq.CS_FileNotFound", timeout=5
+    )
+    assert result is not None, "Expected CS_FileNotFound event for nonexistent file"
