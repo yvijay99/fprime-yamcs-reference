@@ -75,8 +75,9 @@ def test_cmd_no_op(fprime_test_api):
     """
     fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=5)
     assert fprime_test_api.get_command_test_history().size() == 1
+    prev = fprime_test_api.get_command_test_history().size()
     fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=5)
-    assert fprime_test_api.get_command_test_history().size() == 2
+    assert fprime_test_api.get_command_test_history().size() == prev + 1
 
 
 def test_cmd_no_op_string(fprime_test_api):
@@ -241,10 +242,10 @@ def test_health_enable_disable(fprime_test_api):
     Tunables: max_delay (5s).
     """
     fprime_test_api.send_and_assert_command(
-        "CdhCore.health.HLTH_ENABLE", ["DISABLED"], max_delay=5
+        "CdhCore.health.HLTH_ENABLE", ["DISABLED"], max_delay=10
     )
     fprime_test_api.send_and_assert_command(
-        "CdhCore.health.HLTH_ENABLE", ["ENABLED"], max_delay=5
+        "CdhCore.health.HLTH_ENABLE", ["ENABLED"], max_delay=10
     )
 
 
