@@ -52,7 +52,6 @@ def test_yamcs_downlink_file(fprime_test_api):
     storage = yamcs_client.yamcs.get_storage_client()
     object_name = tmp_file.name.split("/")[-1]
     data = storage.download_object(
-        instance=yamcs_client.yamcs.instance,
         bucket_name="fprimeFilesIn",
         object_name=object_name,
     )
