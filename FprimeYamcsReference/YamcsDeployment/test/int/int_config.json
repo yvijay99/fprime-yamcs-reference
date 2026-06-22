@@ -11,5 +11,11 @@
     "Svc.DpCatalog": "DataProducts.dpCat",
     "Svc.DpManager": "DataProducts.dpMgr",
     "Svc.DpWriter": "DataProducts.dpWriter",
-    "Svc.Health": "CdhCore.health"
+    "Svc.Health": "CdhCore.health",
+    "Svc.SystemResources": "FprimeYamcsReference.systemResources",
+    "Svc.Version": "CdhCore.version",
+    "Svc.ActiveRateGroup": "FprimeYamcsReference.rateGroup1",
+    "Svc.ComQueue": "ComCcsds.comQueue",
+    "Svc.BufferManager": "ComCcsds.commsBufferManager",
+    "Svc.RateGroupDriver": "FprimeYamcsReference.rateGroupDriver"
 }
