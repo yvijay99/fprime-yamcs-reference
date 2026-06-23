@@ -47,7 +47,7 @@ def test_yamcs_downlink_file(fprime_test_api):
     yamcs_client = fprime_test_api.pipeline.client_socket
     result = yamcs_client.download_file(tmp_file.name, timeout=30)
 
-    assert "COMPLETED" in str(result.state), f"Download failed: {result.stdout}\n{result.stderr}"
+    assert "COMPLETED" in str(result.state), f"Download failed: {result.state}"
 
     storage = yamcs_client.yamcs.get_storage_client()
     object_name = tmp_file.name.split("/")[-1]
@@ -55,7 +55,7 @@ def test_yamcs_downlink_file(fprime_test_api):
         bucket_name="fprimeFilesIn",
         object_name=object_name,
     )
-    assert data.decode() == TEST_DATA, f"Failure: {result.stdout}\n{result.stderr}"
+    assert data.decode() == TEST_DATA, f"Download data mismatch: {result.state}"
 
     os.unlink(tmp_file.name)
 
@@ -116,17 +116,6 @@ def test_yamcs_file_manager(fprime_test_api):
         max_delay=50,
     )
 
-    fprime_test_api.send_command(
-        fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "RemoveDirectory",
-        ["/tmp/file"],
-    )
-
-    fprime_test_api.send_and_assert_command(
-        fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "RemoveDirectory",
-        ["/tmp/file2"],
-        max_delay=10,
-    )
-
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "RemoveFile",
         ["/tmp/file/test_seq.seq", True],
@@ -137,4 +126,10 @@ def test_yamcs_file_manager(fprime_test_api):
         fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "RemoveDirectory",
         ["/tmp/file"],
         max_delay=5,
+    )
+
+    fprime_test_api.send_and_assert_command(
+        fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "RemoveDirectory",
+        ["/tmp/file2"],
+        max_delay=10,
     )
