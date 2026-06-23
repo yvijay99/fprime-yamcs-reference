@@ -10,9 +10,6 @@ build-fprime-*
 # Misc
 /venv/
 /fprime-venv/
-/fprime-venv-linux/
-__pycache__/
-*.pyc
 /.idea/
 /.vscode/
 .DS_Store
