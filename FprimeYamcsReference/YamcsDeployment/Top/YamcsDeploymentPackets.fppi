@@ -163,4 +163,5 @@ telemetry packets YamcsDeploymentPackets {
 
 } omit {
   CdhCore.cmdDisp.CommandErrors
+  CdhCore.tlmSend.SendLevel
 }
