@@ -65,17 +65,19 @@ def test_telemetry_update(fprime_test_api: IntegrationTestAPI):
     begin_result = fprime_test_api.await_telemetry(cmd_dispatched_channel, timeout=3)
     begin_tlm_val = begin_result.val_obj.val
 
+    # Capture history position before sending command to avoid finding stale cached telemetry
+    start = fprime_test_api.get_telemetry_test_history().size()
+
     # Send no op to increase the count of commands dispatched
-    # Use send_command + await_telemetry with value predicate to wait for actual value change
-    # This avoids race condition where periodic telemetry emission happens before command completes
     fprime_test_api.send_command(
         f"{fprime_test_api.get_mnemonic('Svc.CommandDispatcher')}.CMD_NO_OP"
     )
 
-    # Wait for telemetry with value > begin_tlm_val (use predicates.greater_than)
+    # Wait for telemetry with value > begin_tlm_val from the point after command was sent
     from fprime_gds.common.testing_fw import predicates
     end_result = fprime_test_api.await_telemetry(
         cmd_dispatched_channel,
+        start=start,
         value=predicates.greater_than(begin_tlm_val),
         timeout=5
     )

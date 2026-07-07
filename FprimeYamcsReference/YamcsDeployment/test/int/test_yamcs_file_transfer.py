@@ -33,6 +33,9 @@ def test_yamcs_uplink_via_file_transfer(fprime_test_api):
         import pytest
         pytest.skip("Not using YAMCS transport")
 
+    # Capture event history before upload (upload_file blocks until completion)
+    start = fprime_test_api.get_event_test_history().size()
+
     # Upload and wait for completion
     transfer = yamcs_client.upload_file(tmp_file_path, destination, timeout=30)
 
@@ -40,7 +43,7 @@ def test_yamcs_uplink_via_file_transfer(fprime_test_api):
     assert transfer is not None
 
     # Verify FSW received the file (check for FileReceived event)
-    event = fprime_test_api.await_event("FileReceived", timeout=5)
+    event = fprime_test_api.await_event("FileReceived", start=start, timeout=5)
     assert event is not None
 
     # Cleanup
@@ -78,9 +81,10 @@ def test_yamcs_downlink_via_file_transfer(fprime_test_api):
         import pytest
         pytest.skip("Not using YAMCS transport")
 
-    # Upload first
+    # Upload first (capture history before upload since it blocks)
+    start = fprime_test_api.get_event_test_history().size()
     yamcs_client.upload_file(tmp_file_path, source_file, timeout=30)
-    fprime_test_api.await_event("FileReceived", timeout=5)
+    fprime_test_api.await_event("FileReceived", start=start, timeout=5)
 
     # Now download it back using YAMCS file transfer
     download_bucket = "fprimeFilesOut"
@@ -100,12 +104,12 @@ def test_yamcs_downlink_via_file_transfer(fprime_test_api):
 
     try:
         # Download from the input bucket (where we uploaded it)
-        with open(output_file, 'wb') as f:
-            storage.download_object(
-                bucket_name='fprimeFilesIn',
-                object_name=source_file.split('/')[-1],
-                file_obj=f
-            )
+        # download_object returns bytes directly
+        content = storage.download_object(
+            bucket_name='fprimeFilesIn',
+            object_name=source_file.split('/')[-1]
+        )
+        output_file.write_bytes(content)
 
         # Verify contents match
         assert output_file.read_text() == TEST_DATA
@@ -131,14 +135,17 @@ def test_yamcs_large_file_transfer(fprime_test_api):
     source_file = "/tmp/1MiB.txt"
     destination = "/tmp/yamcs_large_file_test.txt"
 
-    # Upload the large file
-    transfer = yamcs_client.upload_file(source_file, destination, timeout=60)
+    # Capture event history before upload (upload blocks until completion)
+    start = fprime_test_api.get_event_test_history().size()
+
+    # Upload the large file with increased timeout
+    transfer = yamcs_client.upload_file(source_file, destination, timeout=120)
 
     # Verify completion
     assert transfer is not None
 
     # Wait for FileReceived event
-    event = fprime_test_api.await_event("FileReceived", timeout=30)
+    event = fprime_test_api.await_event("FileReceived", start=start, timeout=30)
     assert event is not None
 
     # Verify file size on FSW
