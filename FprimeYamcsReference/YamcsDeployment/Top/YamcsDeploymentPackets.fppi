@@ -163,6 +163,7 @@ telemetry packets YamcsDeploymentPackets {
 
 } omit {
   CdhCore.cmdDisp.CommandErrors
+  CdhCore.events.EventsDropped
   CdhCore.tlmSend.SectionEnabled 
   CdhCore.tlmSend.GroupConfigs 
   DataProducts.dpBufferAccumulator.BA_NumQueuedBuffers
