@@ -9,6 +9,20 @@ import tempfile
 from pathlib import Path
 
 
+def _await_file_manager_idle(fprime_test_api, timeout=600):
+    """Flush the fileManager command queue before asserting on it.
+
+    Earlier tests (test_cmd_health) leave fileManager grinding through queued
+    multi-minute AppendFile commands. RemoveFile with ignoreErrors=True always
+    completes, so awaiting it guarantees the queue is drained.
+    """
+    fprime_test_api.send_and_assert_command(
+        fprime_test_api.get_mnemonic("Svc.FileManager") + ".RemoveFile",
+        ["/tmp/yamcs_test_barrier.txt", True],
+        timeout=timeout,
+    )
+
+
 def test_yamcs_uplink_via_file_transfer(fprime_test_api):
     """Test file uplink using YAMCS file transfer service
 
@@ -32,6 +46,8 @@ def test_yamcs_uplink_via_file_transfer(fprime_test_api):
     if not hasattr(yamcs_client, 'upload_file'):
         import pytest
         pytest.skip("Not using YAMCS transport")
+
+    _await_file_manager_idle(fprime_test_api)
 
     # Capture event history before upload (upload_file blocks until completion)
     start = fprime_test_api.get_event_test_history().size()
@@ -117,6 +133,8 @@ def test_yamcs_large_file_transfer(fprime_test_api):
     # Use the existing 1MiB.txt file
     source_file = "/tmp/1MiB.txt"
     destination = "/tmp/yamcs_large_file_test.txt"
+
+    _await_file_manager_idle(fprime_test_api)
 
     # Capture event history before upload (upload blocks until completion)
     start = fprime_test_api.get_event_test_history().size()

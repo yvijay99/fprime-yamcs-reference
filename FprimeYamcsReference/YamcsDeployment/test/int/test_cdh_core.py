@@ -73,15 +73,13 @@ def test_telemetry_update(fprime_test_api: IntegrationTestAPI):
         f"{fprime_test_api.get_mnemonic('Svc.CommandDispatcher')}.CMD_NO_OP"
     )
 
-    # Wait for telemetry with value > begin_tlm_val from the point after command was sent.
-    # Pass the mnemonic (not a prebuilt predicate) so the value constraint is applied.
+    # Wait for telemetry with value > begin_tlm_val from the point after command was sent
     from fprime_gds.common.testing_fw import predicates
     end_result = fprime_test_api.await_telemetry(
-        "CommandsDispatched",
-        value=predicates.greater_than(begin_tlm_val),
+        cmd_dispatched_channel,
         start=start,
-        timeout=10,
+        value=predicates.greater_than(begin_tlm_val),
+        timeout=5
     )
     # Assert that the telemetry value has increased by 1 after sending the command
-    assert end_result is not None
     assert end_result.val_obj.val == begin_tlm_val + 1
