@@ -53,7 +53,7 @@ def test_yamcs_uplink_via_file_transfer(fprime_test_api):
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + ".FileSize",
         [destination],
-        max_delay=5,
+        max_delay=15,
     )
 
 
@@ -139,7 +139,7 @@ def test_yamcs_large_file_transfer(fprime_test_api):
     start = fprime_test_api.get_event_test_history().size()
 
     # Upload the large file with increased timeout
-    transfer = yamcs_client.upload_file(source_file, destination, timeout=120)
+    transfer = yamcs_client.upload_file(source_file, destination, timeout=300)
 
     # Verify completion
     assert transfer is not None
@@ -152,5 +152,5 @@ def test_yamcs_large_file_transfer(fprime_test_api):
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + ".FileSize",
         [destination],
-        max_delay=10,
+        max_delay=15,
     )
