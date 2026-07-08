@@ -60,64 +60,47 @@ def test_yamcs_uplink_via_file_transfer(fprime_test_api):
 def test_yamcs_downlink_via_file_transfer(fprime_test_api):
     """Test file downlink using YAMCS file transfer service
 
-    This test creates a file on FSW, downloads it using YAMCS file transfer,
-    and verifies the contents match.
+    Uploads a file with known content to FSW, then requests it back through the
+    YAMCS file transfer service (which drives FileDownlink.SendFile on FSW) and
+    verifies the reassembled bucket object matches.
     """
     TEST_DATA = f"test downlink data via YAMCS {random.random()}\n"
 
-    # Create a file on FSW side using FileManager
     source_file = f"/tmp/yamcs_downlink_source_{random.randint(0, 10000)}.txt"
 
-    # Write test data to a temp file
     tmp_file = tempfile.NamedTemporaryFile(mode="w+", delete=False, dir="/tmp/")
     tmp_file.write(TEST_DATA)
     tmp_file.flush()
     tmp_file_path = tmp_file.name
     tmp_file.close()
 
-    # First upload the file to FSW so we have something to download
     yamcs_client = fprime_test_api.pipeline.client_socket
     if not hasattr(yamcs_client, 'download_file'):
         import pytest
         pytest.skip("Not using YAMCS transport")
 
-    # Upload first (capture history before upload since it blocks)
-    start = fprime_test_api.get_event_test_history().size()
-    yamcs_client.upload_file(tmp_file_path, source_file, timeout=30)
-    fprime_test_api.await_event("FileReceived", start=start, timeout=5)
-
-    # Now download it back using YAMCS file transfer
-    download_bucket = "fprimeFilesOut"
-    downloaded_file = f"yamcs_downloaded_{random.randint(0, 10000)}.txt"
-
-    # Request FSW to send the file via YAMCS file transfer
-    # Note: This requires FSW integration with YAMCS file transfer service
-    # For now, we'll use the file we just uploaded and download it back from YAMCS storage
-
-    # Download from YAMCS storage (the file we uploaded is in bucket)
-    storage = yamcs_client.yamcs.get_storage_client()
-
-    # Create output directory
-    output_dir = Path("/tmp/yamcs_test_downloads")
-    output_dir.mkdir(exist_ok=True)
-    output_file = output_dir / downloaded_file
-
     try:
-        # Download from the input bucket (where we uploaded it)
-        # download_object returns bytes directly
-        content = storage.download_object(
-            bucket_name='fprimeFilesIn',
-            object_name=source_file.split('/')[-1]
+        # Upload the file so there is something on FSW to downlink
+        start = fprime_test_api.get_event_test_history().size()
+        yamcs_client.upload_file(tmp_file_path, source_file, timeout=30)
+        assert fprime_test_api.await_event("FileReceived", start=start, timeout=10) is not None
+
+        # Downlink it back under a distinct object name so the object staged
+        # during upload cannot mask a downlink failure
+        downloaded_object = f"yamcs_downloaded_{random.randint(0, 10000)}.txt"
+        transfer = yamcs_client.download_file(
+            source_file, object_name=downloaded_object, timeout=60
         )
-        output_file.write_bytes(content)
+        assert transfer is not None
+        assert "COMPLETED" in str(transfer.state), f"Downlink did not complete: {transfer.state}"
 
-        # Verify contents match
-        assert output_file.read_text() == TEST_DATA
-
+        # Verify the reassembled object contents match what was uplinked
+        storage = yamcs_client.yamcs.get_storage_client()
+        content = storage.download_object(
+            bucket_name="fprimeFilesIn", object_name=downloaded_object
+        )
+        assert content.decode() == TEST_DATA
     finally:
-        # Cleanup
-        if output_file.exists():
-            output_file.unlink()
         Path(tmp_file_path).unlink()
 
 
