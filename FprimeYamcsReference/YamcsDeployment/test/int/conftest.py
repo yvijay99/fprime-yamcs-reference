@@ -1,8 +1,9 @@
 """
-Shared pytest fixtures for FprimeYamcsReference integration tests.
+Pytest configuration for FprimeYamcsReference integration tests.
 
-This module provides common fixtures for setting up test files
-that are required by integration test suites.
+Copies test files from the fprime submodule to /tmp/ before running tests.
+Integration tests (FileManager, FileDownlink, CmdSequencer) expect test files
+like test_seq.seq and 1MiB.txt to exist at /tmp/ on the target filesystem.
 """
 
 import shutil
@@ -13,32 +14,22 @@ from pathlib import Path
 
 def find_fprime_location():
     """
-    Find the fprime repository location dynamically.
+    Find the fprime submodule location.
 
-    Searches in order:
-    1. lib/fprime submodule (if exists)
-    2. fprime-svc directory (CI artifact structure)
-    3. Git submodule path
-    4. Environment variable FPRIME_LOCATION
+    Tries local dev (lib/fprime), CI artifacts (fprime-svc/), git submodule path,
+    and FPRIME_LOCATION environment variable.
     """
-    # Try relative path to submodule
     current_file = Path(__file__).resolve()
     potential_submodule = current_file.parent.parent.parent.parent.parent / "lib" / "fprime"
     if potential_submodule.exists() and (potential_submodule / "Svc").exists():
         return potential_submodule
 
-    # Try CI artifact structure (fprime-svc directory)
-    # When CI copies artifacts, fprime Svc is at ./fprime-svc/
-    # which is actually lib/fprime/Svc, so we return a mock path
+    # CI artifacts: fprime Svc directory is copied to fprime-svc/
     cwd = Path.cwd()
     fprime_svc = cwd / "fprime-svc"
     if fprime_svc.exists() and fprime_svc.is_dir():
-        # fprime-svc IS the Svc directory, so we need to return a fake parent
-        # that allows accessing fprime-svc as if it were lib/fprime/Svc
-        # We'll return cwd and adjust the source_dir logic below
-        return fprime_svc  # Special case: return Svc directory directly
+        return fprime_svc
 
-    # Try finding via git submodule
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
@@ -54,7 +45,6 @@ def find_fprime_location():
     except (subprocess.CalledProcessError, FileNotFoundError):
         pass
 
-    # Check environment variable
     import os
     if "FPRIME_LOCATION" in os.environ:
         fprime_path = Path(os.environ["FPRIME_LOCATION"])
@@ -67,12 +57,11 @@ def find_fprime_location():
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_files():
     """
-    Copy test files to /tmp/ for use by integration tests.
+    Copy test files from fprime submodule to /tmp/ before tests run.
 
-    Many integration tests (FileManager, FileDownlink, etc.) expect
-    test files to exist in /tmp/ on the target filesystem.
+    Integration tests expect test_seq.seq, test_seq_wait.seq, and 1MiB.txt
+    to exist at /tmp/ on the target filesystem.
     """
-    # Find fprime location dynamically
     fprime_lib = find_fprime_location()
 
     if fprime_lib is None:
@@ -82,23 +71,13 @@ def setup_test_files():
 
     print(f"Found fprime location: {fprime_lib}")
 
-    # Check if fprime_lib is the Svc directory directly (CI artifact case)
     if (fprime_lib / "FileUplink").exists():
-        # fprime_lib is actually the Svc directory
         source_dir = fprime_lib / "FileUplink" / "test" / "int"
-        print(f"Using CI artifact structure, source_dir: {source_dir}")
     else:
-        # Normal case: fprime_lib is the fprime root
         source_dir = fprime_lib / "Svc" / "FileUplink" / "test" / "int"
-        print(f"Using normal structure, source_dir: {source_dir}")
 
-    test_files = [
-        "test_seq.seq",
-        "test_seq_wait.seq",
-        "1MiB.txt",
-    ]
+    test_files = ["test_seq.seq", "test_seq_wait.seq", "1MiB.txt"]
 
-    # Copy files to /tmp/ if they don't exist or are different
     for filename in test_files:
         source = source_dir / filename
         dest = Path("/tmp") / filename
@@ -113,9 +92,3 @@ def setup_test_files():
             print(f"Warning: Source file {source} does not exist")
 
     yield
-
-    # Cleanup is optional - comment out if you want files to persist
-    # for filename in test_files:
-    #     dest = Path("/tmp") / filename
-    #     if dest.exists():
-    #         dest.unlink()
