@@ -18,7 +18,7 @@ module FprimeYamcsReference {
     instance CdhCore.Subtopology
     instance ComCcsds.Subtopology
     instance DataProducts.Subtopology
-    instance FileHandling.Subtopology
+    instance FileHandlingCfdp.Subtopology
     
   # ----------------------------------------------------------------------
   # Instances used in the topology
@@ -42,7 +42,7 @@ module FprimeYamcsReference {
     telemetry connections instance CdhCore.tlmSend
     text event connections instance CdhCore.textLogger
     health connections instance CdhCore.$health
-    param connections instance FileHandling.prmDb
+    param connections instance FileHandlingCfdp.prmDb
     time connections instance chronoTime
 
   # ----------------------------------------------------------------------
@@ -66,14 +66,19 @@ module FprimeYamcsReference {
 
     }
 
-    connections ComCcsds_FileHandling {
-      # File Downlink to Communication Queue
-      FileHandling.Subtopology.fileDownlinkBufferSendOut -> ComCcsds.Subtopology.bufferQueueIn[ComCcsds.Ports_ComBufferQueue.FILE]
-      ComCcsds.Subtopology.bufferReturnOut[ComCcsds.Ports_ComBufferQueue.FILE] -> FileHandling.Subtopology.fileDownlinkBufferReturn
+    connections ComCcsds_FileHandlingCfdp {
+      # CFDP uses the FILE buffer queue (CFDP PDUs are routed as file packets)
+      # CFDP Downlink -> ComQueue
+      FileHandlingCfdp.cfdpManager.dataOut[0] -> ComCcsds.Subtopology.bufferQueueIn[0]
+      ComCcsds.Subtopology.bufferReturnOut[0] -> FileHandlingCfdp.cfdpManager.dataReturnIn[0]
 
-      # Router to File Uplink
-      ComCcsds.Subtopology.fileUplinkOut -> FileHandling.Subtopology.fileUplinkBufferSendIn
-      FileHandling.Subtopology.fileUplinkBufferSendOut -> ComCcsds.Subtopology.fileUplinkReturnIn
+      # Router to CFDP Uplink
+      ComCcsds.Subtopology.fileUplinkOut -> FileHandlingCfdp.cfdpManager.dataIn[0]
+      FileHandlingCfdp.cfdpManager.dataInReturn[0] -> ComCcsds.Subtopology.fileUplinkReturnIn
+
+      # Buffer allocation for CFDP - use comms buffer manager
+      FileHandlingCfdp.cfdpManager.bufferAllocate[0] -> ComCcsds.Subtopology.commsBufferGetCallee
+      FileHandlingCfdp.cfdpManager.bufferDeallocate[0] -> ComCcsds.Subtopology.commsBufferSendIn
     }
 
     connections Communications {
@@ -90,10 +95,10 @@ module FprimeYamcsReference {
       comDriver.ready         -> ComCcsds.Subtopology.drvConnected
     }
 
-    connections FileHandling_DataProducts {
-      # Data Products to File Downlink
-      DataProducts.Subtopology.dpCatFileOut -> FileHandling.Subtopology.fileDownlinkSendFile
-      FileHandling.Subtopology.fileDownlinkFileComplete -> DataProducts.Subtopology.dpCatFileDone
+    connections FileHandlingCfdp_DataProducts {
+      # Data Products to CFDP Manager
+      DataProducts.Subtopology.dpCatFileOut -> FileHandlingCfdp.cfdpManager.fileIn
+      FileHandlingCfdp.cfdpManager.fileDoneOut -> DataProducts.Subtopology.dpCatFileDone
     }
 
     connections RateGroups {
@@ -103,11 +108,11 @@ module FprimeYamcsReference {
       # Rate group 1
       rateGroupDriver.CycleOut[Ports_RateGroups.rateGroup1] -> rateGroup1.CycleIn
       rateGroup1.RateGroupMemberOut[0] -> CdhCore.Subtopology.tlmSendRun
-      rateGroup1.RateGroupMemberOut[1] -> FileHandling.Subtopology.fileDownlinkRun
+      rateGroup1.RateGroupMemberOut[1] -> FileHandlingCfdp.cfdpManager.run1Hz
       rateGroup1.RateGroupMemberOut[2] -> systemResources.run
       rateGroup1.RateGroupMemberOut[3] -> ComCcsds.Subtopology.comQueueRun
       rateGroup1.RateGroupMemberOut[4] -> ComCcsds.Subtopology.aggregatorTimeout
-      rateGroup1.RateGroupMemberOut[5] -> FileHandling.Subtopology.fileManagerSchedIn
+      rateGroup1.RateGroupMemberOut[5] -> FileHandlingCfdp.fileManager.schedIn
       rateGroup1.RateGroupMemberOut[6] -> CdhCore.Subtopology.cmdDispRun
 
       # Rate group 2

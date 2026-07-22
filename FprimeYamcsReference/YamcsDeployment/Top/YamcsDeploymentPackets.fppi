@@ -4,11 +4,8 @@ telemetry packets YamcsDeploymentPackets {
     CdhCore.cmdDisp.CommandsDispatched
     CdhCore.cmdDisp.CommandsDropped
 
-    FileHandling.fileUplink.FilesReceived
-    FileHandling.fileUplink.PacketsReceived
-    FileHandling.fileDownlink.FilesSent
-    FileHandling.fileDownlink.PacketsSent
-    FileHandling.fileManager.CommandsExecuted
+    FileHandlingCfdp.cfdpManager.ChannelTelemetry
+    FileHandlingCfdp.fileManager.CommandsExecuted
 
     FprimeYamcsReference.cmdSeq.CS_LoadCommands
     FprimeYamcsReference.cmdSeq.CS_CancelCommands
@@ -29,9 +26,7 @@ telemetry packets YamcsDeploymentPackets {
   packet CDHErrors id 2 group 1 {
     CdhCore.$health.PingLateWarnings
 
-    FileHandling.fileUplink.Warnings
-    FileHandling.fileDownlink.Warnings
-    FileHandling.fileManager.Errors
+    FileHandlingCfdp.fileManager.Errors
 
     FprimeYamcsReference.cmdSeq.CS_Errors
     ComCcsds.commsBufferManager.NoBuffs

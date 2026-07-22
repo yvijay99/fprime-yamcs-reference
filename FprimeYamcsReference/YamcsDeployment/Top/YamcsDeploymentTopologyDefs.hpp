@@ -10,13 +10,13 @@
 #include "Svc/Subtopologies/CdhCore/PingEntries.hpp"
 #include "Svc/Subtopologies/ComCcsds/PingEntries.hpp"
 #include "Svc/Subtopologies/DataProducts/PingEntries.hpp"
-#include "Svc/Subtopologies/FileHandling/PingEntries.hpp"
+#include "Svc/Subtopologies/FileHandlingCfdp/PingEntries.hpp"
 
 // SubtopologyTopologyDefs includes
 #include "Svc/Subtopologies/CdhCore/SubtopologyTopologyDefs.hpp"
 #include "Svc/Subtopologies/ComCcsds/SubtopologyTopologyDefs.hpp"
 #include "Svc/Subtopologies/DataProducts/SubtopologyTopologyDefs.hpp"
-#include "Svc/Subtopologies/FileHandling/SubtopologyTopologyDefs.hpp"
+#include "Svc/Subtopologies/FileHandlingCfdp/SubtopologyTopologyDefs.hpp"
 
 //ComCcsds Enum Includes
 #include "Svc/Subtopologies/ComCcsds/Ports_ComPacketQueueEnumAc.hpp"
@@ -64,10 +64,10 @@ namespace FprimeYamcsReference {
 struct TopologyState {
     const char* hostname;   //!< Hostname for TCP communication
     U16 port;              //!< Port for TCP communication
-    CdhCore::SubtopologyState cdhCore;           //!< Subtopology state for CdhCore
-    ComCcsds::SubtopologyState comCcsds;         //!< Subtopology state for ComCcsds 
-    DataProducts::SubtopologyState dataProducts; //!< Subtopology state for DataProducts
-    FileHandling::SubtopologyState fileHandling; //!< Subtopology state for FileHandling
+    CdhCore::SubtopologyState cdhCore;                 //!< Subtopology state for CdhCore
+    ComCcsds::SubtopologyState comCcsds;               //!< Subtopology state for ComCcsds
+    DataProducts::SubtopologyState dataProducts;       //!< Subtopology state for DataProducts
+    FileHandlingCfdp::SubtopologyState fileHandlingCfdp; //!< Subtopology state for FileHandlingCfdp
 };
 
 namespace PingEntries = ::PingEntries;
