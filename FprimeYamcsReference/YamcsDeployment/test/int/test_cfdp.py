@@ -16,13 +16,6 @@ See CFDP_YAMCS_NOTES.md for details.
 
 import pytest
 
-# Skip all tests in this module if CFDP is not available in YAMCS
-pytestmark = pytest.mark.skip(
-    reason="CFDP service not yet integrated in fprime-yamcs. "
-    "YAMCS uses FprimeFilePacketService (legacy) instead of CfdpService. "
-    "See CFDP_YAMCS_NOTES.md for details."
-)
-
 import tempfile
 import random
 import time

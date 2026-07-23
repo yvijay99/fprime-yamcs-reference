@@ -26,19 +26,49 @@ services:
       restart: "always"
       logLevel: INFO
 
-  # CFDP Service - replaces FprimeFilePacketService for CFDP-based file transfer
+  # CFDP Service - F Prime CFDP file transfer
+  # Entity IDs from lib/fprime/Svc/Ccsds/CfdpManager/Parameters.fppi
+  # PDU config from lib/fprime/default/config/CfdpCfg.fpp
+  # Channel config from lib/fprime/Svc/Ccsds/CfdpManager/Parameters.fppi
   - class: org.yamcs.cfdp.CfdpService
+    name: FprimeFilePacketService
     args:
-      # Entity IDs: Ground (YAMCS) = 1, Spacecraft (FSW) = 2
-      localEntityId: 1
-      remoteEntities:
-        - id: 2
-          name: FSW
-      # CFDP packets are sent/received via APID 3 (file data)
       inStream: tm_realtime
-      outLink: cfdp_out
-      # Store incoming files in the fprimeFilesIn bucket
+      outStream: tc_realtime
       incomingBucket: fprimeFilesIn
+
+      # LocalEid=42, FileInDefaultDestEntityId=100 (Parameters.fppi)
+      localEntities:
+        - name: yamcs
+          id: 42
+          bucket: fprimeFilesIn
+      remoteEntities:
+        - name: fprime
+          id: 100
+
+      # EntityId=U32, TransactionSeq=U32, MaxPduSize=1024 (CfdpCfg.fpp)
+      entityIdLength: 4
+      sequenceNrLength: 4
+      maxPduSize: 1024
+
+      # ChannelConfig timing parameters (Parameters.fppi)
+      eofAckTimeout: 10000
+      eofAckLimit: 10
+      finAckTimeout: 10000
+      finAckLimit: 10
+      nakLimit: 10
+      inactivityTimeout: 120000
+      immediateNak: true
+
+      # Fault handlers
+      senderFaultHandlers:
+        AckLimitReached: suspend
+        NakLimitReached: suspend
+        InactivityDetected: suspend
+      receiverFaultHandlers:
+        AckLimitReached: suspend
+        NakLimitReached: suspend
+        InactivityDetected: suspend
 
 dataLinks:
   - name: UDP_TM_IN
@@ -71,11 +101,6 @@ dataLinks:
         commandPostprocessorClassName: com.example.myproject.FprimeCommandPostprocessor
         stream: "tc_realtime"
         useCop1: false
-
-  # CFDP output link
-  - name: cfdp_out
-    class: org.yamcs.tctm.GenericPacketOutputStream
-    stream: tc_realtime
 
 mdb:
   # Configuration of the active loaders
