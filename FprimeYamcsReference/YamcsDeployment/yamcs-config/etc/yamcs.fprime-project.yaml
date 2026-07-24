@@ -26,30 +26,49 @@ services:
       restart: "always"
       logLevel: INFO
 
+  # Bridge service: reformats CFDP packets from tm_realtime to cfdp_in
+  # This is needed because tm_realtime tuples have a "packet" column but
+  # CfdpService expects a "pdu" column
+  - class: com.example.myproject.CfdpBridgeService
+    args:
+      inStream: tm_realtime
+      outStream: cfdp_in
+      fileApid: 3
+
+  # Uplink bridge: sends CFDP PDUs from cfdp_out to spacecraft via TC link
+  - class: com.example.myproject.CfdpUplinkBridge
+    args:
+      inStream: cfdp_out
+      uplinkLink: UDP_TC_OUT.vc1
+      fileApid: 3
+
   # CFDP Service - F Prime CFDP file transfer
   # Entity IDs from lib/fprime/Svc/Ccsds/CfdpManager/Parameters.fppi
-  # PDU config from lib/fprime/default/config/CfdpCfg.fpp
-  # Channel config from lib/fprime/Svc/Ccsds/CfdpManager/Parameters.fppi
+  # F´ LocalEid=42, FileInDefaultDestEntityId=100
+  # So YAMCS must be entity 100, F´ is entity 42
   - class: org.yamcs.cfdp.CfdpService
     name: FprimeFilePacketService
     args:
-      inStream: tm_realtime
-      outStream: tc_realtime
-      incomingBucket: fprimeFilesIn
+      inStream: cfdp_in
+      outStream: cfdp_out
 
-      # LocalEid=42, FileInDefaultDestEntityId=100 (Parameters.fppi)
+      # YAMCS entity ID (matches F´'s FileInDefaultDestEntityId)
       localEntities:
         - name: yamcs
-          id: 42
+          id: 100
           bucket: fprimeFilesIn
+      # F´ entity ID (matches F´'s LocalEid)
       remoteEntities:
         - name: fprime
-          id: 100
+          id: 42
 
-      # EntityId=U32, TransactionSeq=U32, MaxPduSize=1024 (CfdpCfg.fpp)
+      # EntityId=U32, TransactionSeq=U32, MaxPduSize
+      # Frame size is 1024, TC frame overhead ~7 bytes, CCSDS header 6 bytes, ComPacket descriptor 2 bytes
+      # Available: 1024 - 7 - 6 - 2 = 1009 bytes
+      # Use 992 to match F´'s OutgoingFileChunkSize parameter
       entityIdLength: 4
       sequenceNrLength: 4
-      maxPduSize: 1024
+      maxPduSize: 992
 
       # ChannelConfig timing parameters (Parameters.fppi)
       eofAckTimeout: 10000
@@ -115,6 +134,17 @@ streamConfig:
     - name: "tm_realtime"
       processor: "realtime"
     - name: "tm_dump"
+    - name: "cfdp_in"
+      schema:
+        columns:
+          - name: "gentime"
+            type: "TIMESTAMP"
+          - name: "seqNum"
+            type: "INT"
+          - name: "rectime"
+            type: "TIMESTAMP"
+          - name: "pdu"
+            type: "BINARY"
   cmdHist: ["cmdhist_realtime", "cmdhist_dump"]
   event: ["events_realtime", "events_dump"]
   param: ["pp_realtime", "pp_dump", "sys_param", "proc_param"]
@@ -122,3 +152,12 @@ streamConfig:
   tc:
     - name: "tc_realtime"
       processor: "realtime"
+    - name: "cfdp_out"
+      schema:
+        columns:
+          - name: "gentime"
+            type: "TIMESTAMP"
+          - name: "seqNum"
+            type: "INT"
+          - name: "pdu"
+            type: "BINARY"
